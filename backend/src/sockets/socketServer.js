@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import { Conversation } from "../models/Conversation.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
+import { allowedOrigins, isOriginAllowed } from "../utils/allowedOrigins.js";
 
 const getTokenFromHandshake = (socket) =>
   socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(" ")[1];
@@ -11,7 +12,14 @@ const getTokenFromHandshake = (socket) =>
 export const initializeSocketServer = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: env.clientUrl,
+      origin(origin, callback) {
+        if (isOriginAllowed(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`Socket origin not allowed: ${origin}`));
+      },
       credentials: true
     }
   });
